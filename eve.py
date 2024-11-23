@@ -6,6 +6,7 @@ import sqlite3
 
 import yaml
 from apscheduler import Scheduler
+from openai import OpenAI
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk import WebClient
@@ -18,11 +19,13 @@ with open("logging.yaml", "r") as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 logging.config.dictConfig(config)
 
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 SLACK_APP_TOKEN = os.environ["SLACK_APP_TOKEN"]
 SLACK_BOT_TOKEN = os.environ["SLACK_BOT_TOKEN"]
 
 app = App(token=SLACK_BOT_TOKEN, ignoring_self_events_enabled=False)
 client = WebClient(token=SLACK_BOT_TOKEN)
+groq = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
 conn = sqlite3.connect(f"{SLACK_BOT_TOKEN}.db", check_same_thread=False)
 ensure_schema(conn)
 
@@ -62,6 +65,6 @@ def handle_schedule_command(ack, respond, command):
 #     say(text="Hello", thread_ts=thread_ts)
 
 with Scheduler() as scheduler:
-    sync_schedules(conn, client, scheduler)
+    sync_schedules(conn, client, groq, scheduler)
     scheduler.start_in_background()
     SocketModeHandler(app, SLACK_APP_TOKEN).start()
