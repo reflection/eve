@@ -4,9 +4,9 @@ from datetime import datetime
 from apscheduler.triggers.cron import CronTrigger
 from slack_sdk.errors import SlackApiError
 
-from auth import get_groq_client, get_slack_client, get_sqlite3_cursor
+from auth import get_slack_client, get_sqlite3_cursor
 from feedback import setup_feedback
-from prompt import global_prompt
+from personality import eveify
 
 
 def sync_schedules(scheduler):
@@ -31,19 +31,8 @@ def post(channel_id, message, tool):
     try:
         if tool == "feedback":
             day = datetime.now().strftime("%Y-%m-%d")
-            groq = get_groq_client()
-            history = [
-                {"role": "system", "content": global_prompt},
-                {
-                    "role": "user",
-                    "content": f"This is the first Slack message from Eve to ask users to reply in the thread to provide feedback. Feedback task: {message}",
-                },
-            ]
-            res = groq.chat.completions.create(
-                messages=history,
-                model="llama-3.2-90b-vision-preview",
-            )
-            text = res.choices[0].message.content
+            prompt = f"This is the first Slack message from Eve to ask users to reply in the thread to provide feedback. Feedback task: {message}"
+            text = eveify(prompt)
         else:
             text = message
 

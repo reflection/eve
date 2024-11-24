@@ -1,6 +1,7 @@
 import logging
 
 from auth import get_google_docs_service
+from personality import eveify
 
 feedback_threads_ts = {}
 
@@ -104,6 +105,9 @@ def handle_feedback_message(body, say):
                     .execute()
                 )
                 logging.info(f"Updated google doc: {res}")
-                say("Feedback recorded and thanks!", thread_ts=thread_ts)
+                msg = eveify(
+                    "User just provided feedback.  Thank them and let them know was recorded in a sentence."
+                )
+                say(msg, thread_ts=thread_ts)
         except Exception as e:
             logging.error(f"Error updating google doc: {e}")
