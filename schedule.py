@@ -4,11 +4,13 @@ from datetime import datetime
 from apscheduler.triggers.cron import CronTrigger
 from slack_sdk.errors import SlackApiError
 
+from auth import get_groq_client, get_slack_client, get_sqlite3_cursor
+from feedback import setup_feedback
 from prompt import global_prompt
 
 
-def sync_schedules(conn, client, groq, scheduler):
-    cur = conn.cursor()
+def sync_schedules(scheduler):
+    cur = get_sqlite3_cursor()
     res = cur.execute("SELECT id, channel_id, message, schedule, tool FROM schedule")
     schedule_ids = [s.id for s in scheduler.get_schedules()]
     for schedule_id, channel_id, message, schedule, tool in res.fetchall():
@@ -18,36 +20,41 @@ def sync_schedules(conn, client, groq, scheduler):
                 scheduler.add_schedule(
                     post,
                     CronTrigger.from_crontab(schedule),
-                    args=[client, groq, channel_id, message, tool],
+                    args=[channel_id, message, tool],
                     id=schedule_id,
                 )
         except Exception as e:
             logging.error(f"Error scheduling id ({schedule_id}): {e}")
 
 
-def post(client, groq, channel_id, message, tool):
+def post(channel_id, message, tool):
     try:
-        metadata = {}
         if tool == "feedback":
-            metadata = {
-                "event_type": tool,
-                "event_payload": {"day": datetime.today().isoformat()},
-            }
-        history = [
-            {"role": "system", "content": global_prompt},
-            {"role": "user", "content": f"Rephrase the following as Eve: {message}"},
-        ]
-        res = groq.chat.completions.create(
-            messages=history,
-            model="llama-3.2-90b-vision-preview",
-        )
-        text = res.choices[0].message.content
+            day = datetime.now().strftime("%Y-%m-%d")
+            groq = get_groq_client()
+            history = [
+                {"role": "system", "content": global_prompt},
+                {
+                    "role": "user",
+                    "content": f"This is the first Slack message from Eve to ask users to reply in the thread to provide feedback. Feedback task: {message}",
+                },
+            ]
+            res = groq.chat.completions.create(
+                messages=history,
+                model="llama-3.2-90b-vision-preview",
+            )
+            text = res.choices[0].message.content
+        else:
+            text = message
+
+        client = get_slack_client()
         result = client.chat_postMessage(
             channel=channel_id,
             text=text,
-            metadata=metadata,
         )
         logging.info(f"Message posted: {result}")
+        if tool == "feedback":
+            setup_feedback(result["ts"], day)
     except SlackApiError as e:
         logging.error(
             f"Error posting channel id ({channel_id}) message ({message}): {e}"

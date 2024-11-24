@@ -1,3 +1,5 @@
 __pycache__/
 venv/
 setup.sh
+credentials.json
+token.pickle
