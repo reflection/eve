@@ -2,7 +2,7 @@ apscheduler==4.0.0a5
 google-api-python-client==2.154.0
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.1
-openai==1.55.0
+openai==1.55.3
 pyyaml==6.0.2
 slack-bolt==1.21.2
 slack-sdk==3.33.4
