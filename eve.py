@@ -28,7 +28,7 @@ app = App(token=SLACK_BOT_TOKEN)
 def handle_message(say, body):
     thread_ts = body.get("event", {}).get("thread_ts")
     if thread_ts in feedback_threads_ts:
-        handle_feedback_message(body, say)
+        handle_feedback_message(body)
 
     logging.info(json.dumps(body))
 
