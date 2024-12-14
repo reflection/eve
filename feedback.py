@@ -53,7 +53,7 @@ def handle_feedback_message(body):
                 canvas_id=canvas_id,
                 changes=[
                     {
-                        "operation": "insert_before",
+                        "operation": "insert_after",
                         "section_id": section_id,
                         "document_content": {
                             "type": "markdown",
